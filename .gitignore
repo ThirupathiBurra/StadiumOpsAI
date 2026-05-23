@@ -46,3 +46,10 @@ pnpm-debug.log*
 # Testing
 coverage/
 .nyc_output/
+.env
+.env.local
+.env.*
+*.pem
+*.key
+service-account*.json
+firebase-admin*.json

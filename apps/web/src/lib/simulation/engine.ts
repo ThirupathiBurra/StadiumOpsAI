@@ -108,7 +108,7 @@ async function runScenario(
   demoMode: boolean,
   runId: string
 ): Promise<void> {
-  const speedMultiplier = demoMode ? 0.5 : 1.0;
+  const speedMultiplier = demoMode ? 0.05 : 0.1;
 
   switch (scenarioId) {
     case 'gate-congestion':

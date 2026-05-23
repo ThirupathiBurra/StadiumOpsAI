@@ -1,10 +1,9 @@
-import type { Metadata } from 'next';
+'use client';
+
+import React, { useState } from 'react';
 import { SCENARIO_CATALOG } from '@stadium/shared';
-
-export const metadata: Metadata = { title: 'Simulation Control Panel' };
-
-// ─── Screen 5: Simulation Control Panel ──────────────────────────────────────
-// TODO: Wire up triggerSimulation + resetSimulation callables in Phase 4 UI build.
+import { auth } from '@/lib/firebase/auth';
+import { Play, Loader2, RotateCcw, CheckCircle, AlertCircle } from 'lucide-react';
 
 const SCENARIOS = Object.values(SCENARIO_CATALOG);
 
@@ -24,9 +23,88 @@ const SCENARIO_COLORS: Record<string, string> = {
   'weather-disruption':   'text-blue-400   bg-blue-400/10   border-blue-400/20',
 };
 
+interface LogEntry {
+  time: string;
+  message: string;
+  type: 'info' | 'success' | 'error';
+}
+
 export default function SimulationPage() {
+  const [runningScenario, setRunningScenario] = useState<string | null>(null);
+  const [isResetting, setIsResetting] = useState(false);
+  const [demoMode, setDemoMode] = useState(true);
+  const [log, setLog] = useState<LogEntry[]>([]);
+
+  const addLog = (message: string, type: LogEntry['type'] = 'info') => {
+    const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    setLog(prev => [{ time, message, type }, ...prev].slice(0, 50));
+  };
+
+  const getToken = async () => {
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) throw new Error('Not authenticated — please sign in again.');
+    return token;
+  };
+
+  const runScenario = async (scenarioId: string, scenarioName: string) => {
+    if (runningScenario || isResetting) return;
+    setRunningScenario(scenarioId);
+    addLog(`▶ Starting scenario: ${scenarioName}...`);
+
+    try {
+      const token = await getToken();
+      const res = await fetch('/api/simulation/trigger', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ scenarioId, demoMode }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Simulation failed');
+
+      addLog(`✓ Scenario "${scenarioName}" completed successfully (run: ${data.runId?.slice(0, 8)}...)`, 'success');
+      addLog('→ Check the Live Dashboard and Incident Command for real-time updates.');
+    } catch (err: any) {
+      addLog(`✗ Error: ${err.message}`, 'error');
+    } finally {
+      setRunningScenario(null);
+    }
+  };
+
+  const resetState = async () => {
+    if (runningScenario || isResetting) return;
+    setIsResetting(true);
+    addLog('⟳ Resetting all simulation state to baseline...');
+
+    try {
+      const token = await getToken();
+      const res = await fetch('/api/simulation/reset', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ fullReset: true }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Reset failed');
+
+      addLog('✓ State reset complete. All zones restored to baseline occupancy.', 'success');
+    } catch (err: any) {
+      addLog(`✗ Reset error: ${err.message}`, 'error');
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
+  const isBusy = !!runningScenario || isResetting;
+
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in pb-8">
       {/* Page header */}
       <div className="flex items-center justify-between">
         <div>
@@ -43,30 +121,34 @@ export default function SimulationPage() {
           <div>
             <p className="text-sm font-medium text-slate-200">Demo Mode</p>
             <p className="text-xs text-slate-500 mt-0.5">
-              Accelerated timings (0.5× speed) + auto state reset before each scenario
+              {demoMode ? 'Accelerated timings (0.5× speed) — faster results' : 'Real-time speed — full duration'}
             </p>
           </div>
           <button
             id="toggle-demo-mode"
             role="switch"
-            aria-checked="true"
+            aria-checked={demoMode}
             aria-label="Toggle demo mode"
-            className="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-brand-600 transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 focus:ring-offset-[#161b27]"
+            onClick={() => setDemoMode(v => !v)}
+            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 focus:ring-offset-surface-base ${demoMode ? 'bg-brand-600' : 'bg-surface-border'}`}
           >
-            <span className="translate-x-5 pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out" />
+            <span className={`${demoMode ? 'translate-x-5' : 'translate-x-0'} pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out`} />
           </button>
         </div>
 
         <button
           id="btn-reset-state"
-          className="btn-danger"
+          onClick={resetState}
+          disabled={isBusy}
+          className="btn-danger disabled:opacity-50 disabled:cursor-not-allowed"
           aria-label="Reset all simulation state to baseline"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-              d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
-          </svg>
-          Reset All State
+          {isResetting ? (
+            <Loader2 size={16} className="animate-spin" />
+          ) : (
+            <RotateCcw size={16} />
+          )}
+          {isResetting ? 'Resetting...' : 'Reset All State'}
         </button>
       </div>
 
@@ -76,69 +158,106 @@ export default function SimulationPage() {
           Demo Scenarios
         </h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" role="list" aria-label="Available simulation scenarios">
-          {SCENARIOS.map((scenario) => (
-            <div
-              key={scenario.id}
-              className="glass-card-hover p-5"
-              role="listitem"
-            >
-              <div className="flex items-start justify-between mb-3">
-                <div className={`w-9 h-9 rounded-lg border flex items-center justify-center ${SCENARIO_COLORS[scenario.id] ?? 'text-slate-400 bg-slate-400/10 border-slate-400/20'}`}>
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-                      d={SCENARIO_ICONS[scenario.id] ?? ''} />
-                  </svg>
-                </div>
-                <span className="text-xs text-slate-500 font-mono">
-                  ~{Math.round(scenario.durationMs / 1000)}s
-                </span>
-              </div>
-
-              <h3 className="text-sm font-semibold text-slate-100 mb-1">{scenario.name}</h3>
-              <p className="text-xs text-slate-400 leading-relaxed mb-4">{scenario.description}</p>
-
-              <div className="flex items-center gap-2 mb-4">
-                <span className="text-xs text-slate-500">Zones:</span>
-                <div className="flex flex-wrap gap-1">
-                  {scenario.primaryZones.slice(0, 3).map((z) => (
-                    <span key={z} className="text-xs bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded font-mono">
-                      {z.replace('zone-', '')}
-                    </span>
-                  ))}
-                  {scenario.primaryZones.length > 3 && (
-                    <span className="text-xs text-slate-600">+{scenario.primaryZones.length - 3}</span>
-                  )}
-                </div>
-              </div>
-
-              <button
-                id={`btn-run-${scenario.id}`}
-                className="btn-primary w-full justify-center text-xs py-2"
-                aria-label={`Run ${scenario.name} scenario`}
+          {SCENARIOS.map((scenario) => {
+            const isRunning = runningScenario === scenario.id;
+            return (
+              <div
+                key={scenario.id}
+                className={`glass-card-hover p-5 transition-all duration-200 ${isRunning ? 'ring-1 ring-brand-500/40' : ''}`}
+                role="listitem"
               >
-                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" />
-                </svg>
-                Run Scenario
-              </button>
-            </div>
-          ))}
+                <div className="flex items-start justify-between mb-3">
+                  <div className={`w-9 h-9 rounded-lg border flex items-center justify-center ${SCENARIO_COLORS[scenario.id] ?? 'text-slate-400 bg-slate-400/10 border-slate-400/20'}`}>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                        d={SCENARIO_ICONS[scenario.id] ?? ''} />
+                    </svg>
+                  </div>
+                  <span className="text-xs text-slate-500 font-mono">
+                    ~{demoMode ? Math.round(scenario.durationMs / 2000) : Math.round(scenario.durationMs / 1000)}s {demoMode ? '(demo)' : ''}
+                  </span>
+                </div>
+
+                <h3 className="text-sm font-semibold text-slate-100 mb-1">{scenario.name}</h3>
+                <p className="text-xs text-slate-400 leading-relaxed mb-4">{scenario.description}</p>
+
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="text-xs text-slate-500">Zones:</span>
+                  <div className="flex flex-wrap gap-1">
+                    {scenario.primaryZones.slice(0, 3).map((z) => (
+                      <span key={z} className="text-xs bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded font-mono">
+                        {z.replace('zone-', '')}
+                      </span>
+                    ))}
+                    {scenario.primaryZones.length > 3 && (
+                      <span className="text-xs text-slate-600">+{scenario.primaryZones.length - 3}</span>
+                    )}
+                  </div>
+                </div>
+
+                <button
+                  id={`btn-run-${scenario.id}`}
+                  onClick={() => runScenario(scenario.id, scenario.name)}
+                  disabled={isBusy}
+                  className="btn-primary w-full justify-center text-xs py-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  aria-label={`Run ${scenario.name} scenario`}
+                >
+                  {isRunning ? (
+                    <>
+                      <Loader2 size={14} className="animate-spin" />
+                      Running...
+                    </>
+                  ) : (
+                    <>
+                      <Play size={14} />
+                      Run Scenario
+                    </>
+                  )}
+                </button>
+              </div>
+            );
+          })}
         </div>
       </div>
 
       {/* Active simulation log */}
       <div>
-        <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-4">
-          Simulation Log
-        </h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider">
+            Simulation Log
+          </h2>
+          {log.length > 0 && (
+            <button
+              onClick={() => setLog([])}
+              className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
+            >
+              Clear
+            </button>
+          )}
+        </div>
         <div
           id="simulation-log"
-          className="glass-card p-4 h-48 overflow-y-auto font-mono text-xs text-slate-400"
+          className="glass-card p-4 h-48 overflow-y-auto font-mono text-xs space-y-1"
           role="log"
           aria-label="Simulation event log"
           aria-live="polite"
         >
-          <p className="text-slate-600">— Simulation log will appear here when a scenario is running —</p>
+          {log.length === 0 ? (
+            <p className="text-slate-600">— Simulation log will appear here when a scenario is running —</p>
+          ) : (
+            log.map((entry, i) => (
+              <div key={i} className="flex gap-2">
+                <span className="text-slate-600 flex-shrink-0">{entry.time}</span>
+                <span className={
+                  entry.type === 'success' ? 'text-emerald-400' :
+                  entry.type === 'error' ? 'text-rose-400' :
+                  'text-slate-400'
+                }>
+                  {entry.message}
+                </span>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>

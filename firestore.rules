@@ -8,34 +8,28 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    // Safe role getter — returns empty string if user doc or role field doesn't exist
     function getUserRole() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
-    }
-
-    function hasRole(role) {
-      return isAuthenticated() && getUserRole() == role;
-    }
-
-    function hasAnyRole(roles) {
-      return isAuthenticated() && getUserRole() in roles;
+      let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid));
+      return userDoc.data.get('role', '');
     }
 
     function isAdmin() {
-      return hasRole('super_admin');
+      return isAuthenticated() && getUserRole() == 'super_admin';
     }
 
     function isOperationsOrAbove() {
-      return hasAnyRole(['super_admin', 'operations_manager']);
+      return isAuthenticated() && getUserRole() in ['super_admin', 'operations_manager'];
     }
 
     function canCreateIncident() {
-      return hasAnyRole([
+      return isAuthenticated() && getUserRole() in [
         'super_admin',
         'operations_manager',
         'security_officer',
         'medical_staff',
         'zone_marshal'
-      ]);
+      ];
     }
 
     function isOwner(uid) {
@@ -43,12 +37,14 @@ service cloud.firestore {
     }
 
     // ─── Users Collection ────────────────────────────────────────────────────
-    // Users can read their own profile. Only admins can write.
+    // Users can read their own profile.
+    // Any authenticated user can create their own profile (first sign-in).
 
     match /users/{userId} {
       allow read: if isAuthenticated() && (isOwner(userId) || isOperationsOrAbove());
-      allow create: if isAdmin();
-      allow update: if isAdmin() || (isOwner(userId) && onlyUpdatingAllowedFields(['lastLoginAt', 'photoURL']));
+      // Allow any authenticated user to create their own profile document on first sign-in
+      allow create: if isAuthenticated() && isOwner(userId);
+      allow update: if isAdmin() || (isOwner(userId) && onlyUpdatingAllowedFields(['lastLoginAt', 'photoURL', 'displayName']));
       allow delete: if isAdmin();
 
       function onlyUpdatingAllowedFields(allowedFields) {
@@ -58,40 +54,31 @@ service cloud.firestore {
 
     // ─── Zones Collection ────────────────────────────────────────────────────
     // All authenticated users can read zones (needed for dashboard).
-    // Only agents (via Admin SDK — bypasses rules) and admins write.
+    // Agents write via Admin SDK (bypasses rules). Admins can write directly.
 
     match /zones/{zoneId} {
       allow read: if isAuthenticated();
-      allow write: if isOperationsOrAbove();
+      allow write: if isAdmin();
     }
 
     // ─── Incidents Collection ─────────────────────────────────────────────────
-    // Staff with incident-creation permission can create.
-    // Resolving requires operations_manager or above.
+    // Any authenticated user can create/update incidents (demo mode).
+    // In production, use role-based canCreateIncident().
 
     match /incidents/{incidentId} {
       allow read: if isAuthenticated();
-      allow create: if canCreateIncident();
-      allow update: if isAuthenticated() && (
-        isOperationsOrAbove() ||
-        // Zone marshals/security can only update status on their own incidents
-        (canCreateIncident() && resource.data.reportedBy == request.auth.uid)
-      );
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
       allow delete: if isAdmin();
     }
 
     // ─── Alerts Collection ────────────────────────────────────────────────────
-    // All authenticated users read. Agents write via Admin SDK (bypasses rules).
-    // Operators can acknowledge/dismiss via client.
+    // All authenticated users read. Agents write via Admin SDK.
 
     match /alerts/{alertId} {
       allow read: if isAuthenticated();
-      allow create: if isOperationsOrAbove();
-      allow update: if isAuthenticated() && (
-        isOperationsOrAbove() ||
-        // Allow acknowledging/dismissing by any authenticated user
-        onlyUpdatingAlertStatus()
-      );
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && onlyUpdatingAlertStatus();
       allow delete: if isAdmin();
 
       function onlyUpdatingAlertStatus() {
@@ -103,28 +90,26 @@ service cloud.firestore {
 
     // ─── Audit Logs — APPEND ONLY ─────────────────────────────────────────────
     // Nobody can update or delete audit logs. Agents write via Admin SDK.
-    // Operations managers and above can read.
+    // All authenticated users can read (demo mode; restrict to ops in production).
 
     match /auditLogs/{logId} {
-      allow read: if isOperationsOrAbove();
-      allow create: if isAdmin(); // Client-side creates only for admins; agents use Admin SDK
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
       allow update: if false;     // NEVER allow updates
       allow delete: if false;     // NEVER allow deletes
     }
 
     // ─── Simulations Collection ───────────────────────────────────────────────
-    // Operations managers and above can read and trigger simulations.
 
     match /simulations/{simulationId} {
       allow read: if isAuthenticated();
-      allow create: if isOperationsOrAbove();
-      allow update: if isOperationsOrAbove();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
       allow delete: if isAdmin();
     }
 
     // ─── Agent State Collection ───────────────────────────────────────────────
-    // Read-only for authenticated users (dashboard agent status).
-    // Only Admin SDK writes (agents update their own state).
+    // Read-only for authenticated users. Admin SDK writes.
 
     match /agentState/{agentId} {
       allow read: if isAuthenticated();

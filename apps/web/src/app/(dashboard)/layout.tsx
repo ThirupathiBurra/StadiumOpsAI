@@ -1,22 +1,19 @@
+'use client';
+
 // ─── Dashboard Layout ─────────────────────────────────────────────────────────
 // Shell layout for all dashboard routes.
-// Includes sidebar navigation and top bar.
-// TODO: Add auth guard (redirect to /login if unauthenticated) in Phase 4 UI build.
+// Includes sidebar navigation, top bar, auth guard, and sign-out.
 
-import type { Metadata } from 'next';
-
-export const metadata: Metadata = {
-  title: {
-    default:  'Operations Dashboard',
-    template: '%s | StadiumOps AI',
-  },
-};
+import React, { useEffect, useState } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
+import { subscribeToAuthState, signOutUser } from '@/lib/firebase/auth';
+import type { User } from 'firebase/auth';
 
 const NAV_ITEMS = [
   {
     href: '/dashboard',
     label: 'Live Dashboard',
-    icon: 'M3 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z',
+    icon: 'M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z',
     id: 'nav-dashboard',
   },
   {
@@ -50,6 +47,45 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const [user, setUser] = useState<User | null | 'loading'>('loading');
+
+  // Auth guard
+  useEffect(() => {
+    const unsub = subscribeToAuthState((u) => {
+      setUser(u);
+      if (!u) {
+        router.replace('/login');
+      }
+    });
+    return unsub;
+  }, [router]);
+
+  const handleSignOut = async () => {
+    try {
+      await signOutUser();
+      router.replace('/login');
+    } catch (err) {
+      console.error('Sign-out failed:', err);
+    }
+  };
+
+  // Show loading splash while determining auth state
+  if (user === 'loading') {
+    return (
+      <div className="flex h-screen items-center justify-center bg-surface-base">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-xs text-slate-500">Authenticating...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Not authenticated — router.replace() will redirect; render nothing
+  if (!user) return null;
+
   return (
     <div className="flex h-screen bg-surface-base overflow-hidden">
       {/* ── Sidebar ─────────────────────────────────────────────────────────── */}
@@ -73,26 +109,52 @@ export default function DashboardLayout({
 
         {/* Nav items */}
         <nav className="flex-1 px-3 py-4 space-y-1" aria-label="Dashboard navigation">
-          {NAV_ITEMS.map((item) => (
-            <a
-              key={item.href}
-              href={item.href}
-              id={item.id}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-surface-overlay transition-all duration-150 group"
-              aria-label={item.label}
-            >
-              <svg className="w-5 h-5 flex-shrink-0 group-hover:text-brand-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={item.icon} />
-              </svg>
-              <span className="text-sm font-medium">{item.label}</span>
-            </a>
-          ))}
+          {NAV_ITEMS.map((item) => {
+            const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname?.startsWith(item.href));
+            return (
+              <a
+                key={item.href}
+                href={item.href}
+                id={item.id}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150 group ${
+                  isActive
+                    ? 'bg-brand-500/15 border border-brand-500/25 text-slate-100'
+                    : 'text-slate-400 hover:text-slate-100 hover:bg-surface-overlay border border-transparent'
+                }`}
+                aria-label={item.label}
+                aria-current={isActive ? 'page' : undefined}
+              >
+                <svg
+                  className={`w-5 h-5 flex-shrink-0 transition-colors ${isActive ? 'text-brand-400' : 'group-hover:text-brand-400'}`}
+                  fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={item.icon} />
+                </svg>
+                <span className="text-sm font-medium">{item.label}</span>
+                {isActive && (
+                  <div className="ml-auto w-1 h-4 rounded-full bg-brand-500" />
+                )}
+              </a>
+            );
+          })}
         </nav>
 
-        {/* Footer */}
-        <div className="px-5 py-4 border-t border-surface-border">
+        {/* User + Footer */}
+        <div className="px-5 py-4 border-t border-surface-border space-y-2">
+          {user && typeof user !== 'string' && (
+            <div className="flex items-center gap-2 mb-2">
+              {user.photoURL ? (
+                <img src={user.photoURL} alt="" className="w-6 h-6 rounded-full" />
+              ) : (
+                <div className="w-6 h-6 rounded-full bg-brand-600 flex items-center justify-center text-[10px] text-white font-bold">
+                  {user.displayName?.charAt(0) || user.email?.charAt(0) || 'U'}
+                </div>
+              )}
+              <p className="text-xs text-slate-400 truncate">{user.displayName || user.email}</p>
+            </div>
+          )}
           <p className="text-xs text-slate-600">© 2026 StadiumOps AI</p>
-          <p className="text-xs text-slate-600">v0.1.0 — MVP</p>
+          <p className="text-xs text-slate-600">v0.1.0 — APL Grand Final MVP</p>
         </div>
       </aside>
 
@@ -110,6 +172,7 @@ export default function DashboardLayout({
             </span>
             <button
               id="btn-sign-out"
+              onClick={handleSignOut}
               className="btn-ghost py-1.5 text-xs"
               aria-label="Sign out"
             >

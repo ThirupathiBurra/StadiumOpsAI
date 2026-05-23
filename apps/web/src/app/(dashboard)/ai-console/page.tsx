@@ -123,7 +123,7 @@ export default function AIConsolePage() {
             <div>
               <p className="text-sm font-medium text-brand-400 mb-1">StadiumOps AI</p>
               <p className="text-sm text-slate-300">
-                Hello. I'm your AI operations assistant for the APL Grand Final.
+                Hello. I&apos;m your AI operations assistant for the APL Grand Final.
                 I have real-time access to all stadium zones, incidents, and alerts.
                 How can I help you?
               </p>

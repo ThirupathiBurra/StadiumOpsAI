@@ -7,8 +7,6 @@ dist/
 .next/
 out/
 build/
-lib/
-
 # Firebase
 .firebase/
 firebase-debug.log
@@ -53,3 +51,4 @@ coverage/
 *.key
 service-account*.json
 firebase-admin*.json
+.vercel

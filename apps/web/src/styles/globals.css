@@ -1,0 +1,156 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Google Fonts ─────────────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* ─── CSS Custom Properties ────────────────────────────────────────────────── */
+:root {
+  /* Surface layers (Graphite / Charcoal / Slate) */
+  --surface-base:    #0f1115;
+  --surface-raised:  #181a20;
+  --surface-overlay: #21242c;
+  --surface-border:  #2d3139;
+
+  /* Brand (Muted Stadium Turf Green) */
+  --brand-primary:   #45935e;
+  --brand-glow:      rgba(69, 147, 94, 0.1);
+
+  /* Status */
+  --status-normal:     #22c55e;
+  --status-warning:    #f59e0b;
+  --status-critical:   #ef4444;
+  --status-evacuating: #f97316;
+  --status-closed:     #6b7280;
+
+  /* Typography */
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+/* ─── Base Reset ────────────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: var(--surface-base);
+  color: #e2e8f0;
+  min-height: 100vh;
+  margin: 0;
+}
+
+/* ─── Scrollbar ─────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--surface-raised);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--surface-border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3d4f6b;
+}
+
+/* ─── Utility: Glass Card -> Operations Card ────────────────────────────────── */
+@layer components {
+  /* Renamed for clarity but keeping class name for compatibility */
+  .glass-card {
+    @apply bg-surface-raised border border-surface-border rounded-xl shadow-sm;
+  }
+
+  .glass-card-hover {
+    @apply glass-card transition-all duration-200;
+  }
+
+  .glass-card-hover:hover {
+    @apply border-brand-500/40 bg-surface-overlay;
+    /* Soft shadow instead of glow */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  }
+
+  /* Status dot with pulse for active states */
+  .status-dot {
+    @apply inline-block w-2 h-2 rounded-full flex-shrink-0;
+  }
+
+  /* Severity badge */
+  .severity-badge {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ring-1 ring-inset;
+  }
+
+  /* Data table */
+  .data-table {
+    @apply w-full text-sm;
+  }
+  .data-table th {
+    @apply text-left text-xs font-medium text-slate-400 uppercase tracking-wider pb-3 border-b border-surface-border;
+  }
+  .data-table td {
+    @apply py-3 border-b border-surface-border/50 text-slate-300;
+  }
+  .data-table tr:last-child td {
+    @apply border-b-0;
+  }
+
+  /* Input field */
+  .ops-input {
+    @apply w-full bg-surface-overlay border border-surface-border rounded-lg px-4 py-2.5
+           text-slate-200 placeholder-slate-500
+           focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50
+           transition-all duration-200;
+  }
+
+  /* Primary button */
+  .btn-primary {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg
+           bg-brand-600 hover:bg-brand-500 text-white font-medium text-sm
+           transition-all duration-200 active:scale-95;
+  }
+
+  /* Ghost button */
+  .btn-ghost {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg
+           border border-surface-border hover:border-brand-500/50 hover:bg-brand-500/5
+           text-slate-300 hover:text-slate-100 font-medium text-sm
+           transition-all duration-200 active:scale-95;
+  }
+
+  /* Danger button */
+  .btn-danger {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg
+           bg-red-600/20 hover:bg-red-600/30 border border-red-600/30 hover:border-red-500/60
+           text-red-400 hover:text-red-300 font-medium text-sm
+           transition-all duration-200 active:scale-95;
+  }
+}
+
+/* ─── Animations ─────────────────────────────────────────────────────────────── */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes scanLine {
+  0%   { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+
+.animate-fade-in    { animation: fadeIn 0.2s ease-out forwards; }
+.animate-slide-right { animation: slideInRight 0.3s ease-out forwards; }

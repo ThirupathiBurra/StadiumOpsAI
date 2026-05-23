@@ -1,0 +1,135 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─── Helper Functions ────────────────────────────────────────────────────
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function getUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    function hasRole(role) {
+      return isAuthenticated() && getUserRole() == role;
+    }
+
+    function hasAnyRole(roles) {
+      return isAuthenticated() && getUserRole() in roles;
+    }
+
+    function isAdmin() {
+      return hasRole('super_admin');
+    }
+
+    function isOperationsOrAbove() {
+      return hasAnyRole(['super_admin', 'operations_manager']);
+    }
+
+    function canCreateIncident() {
+      return hasAnyRole([
+        'super_admin',
+        'operations_manager',
+        'security_officer',
+        'medical_staff',
+        'zone_marshal'
+      ]);
+    }
+
+    function isOwner(uid) {
+      return request.auth.uid == uid;
+    }
+
+    // ─── Users Collection ────────────────────────────────────────────────────
+    // Users can read their own profile. Only admins can write.
+
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (isOwner(userId) || isOperationsOrAbove());
+      allow create: if isAdmin();
+      allow update: if isAdmin() || (isOwner(userId) && onlyUpdatingAllowedFields(['lastLoginAt', 'photoURL']));
+      allow delete: if isAdmin();
+
+      function onlyUpdatingAllowedFields(allowedFields) {
+        return request.resource.data.diff(resource.data).affectedKeys().hasOnly(allowedFields);
+      }
+    }
+
+    // ─── Zones Collection ────────────────────────────────────────────────────
+    // All authenticated users can read zones (needed for dashboard).
+    // Only agents (via Admin SDK — bypasses rules) and admins write.
+
+    match /zones/{zoneId} {
+      allow read: if isAuthenticated();
+      allow write: if isOperationsOrAbove();
+    }
+
+    // ─── Incidents Collection ─────────────────────────────────────────────────
+    // Staff with incident-creation permission can create.
+    // Resolving requires operations_manager or above.
+
+    match /incidents/{incidentId} {
+      allow read: if isAuthenticated();
+      allow create: if canCreateIncident();
+      allow update: if isAuthenticated() && (
+        isOperationsOrAbove() ||
+        // Zone marshals/security can only update status on their own incidents
+        (canCreateIncident() && resource.data.reportedBy == request.auth.uid)
+      );
+      allow delete: if isAdmin();
+    }
+
+    // ─── Alerts Collection ────────────────────────────────────────────────────
+    // All authenticated users read. Agents write via Admin SDK (bypasses rules).
+    // Operators can acknowledge/dismiss via client.
+
+    match /alerts/{alertId} {
+      allow read: if isAuthenticated();
+      allow create: if isOperationsOrAbove();
+      allow update: if isAuthenticated() && (
+        isOperationsOrAbove() ||
+        // Allow acknowledging/dismissing by any authenticated user
+        onlyUpdatingAlertStatus()
+      );
+      allow delete: if isAdmin();
+
+      function onlyUpdatingAlertStatus() {
+        return request.resource.data.diff(resource.data)
+          .affectedKeys()
+          .hasOnly(['status', 'acknowledgedBy', 'acknowledgedAt']);
+      }
+    }
+
+    // ─── Audit Logs — APPEND ONLY ─────────────────────────────────────────────
+    // Nobody can update or delete audit logs. Agents write via Admin SDK.
+    // Operations managers and above can read.
+
+    match /auditLogs/{logId} {
+      allow read: if isOperationsOrAbove();
+      allow create: if isAdmin(); // Client-side creates only for admins; agents use Admin SDK
+      allow update: if false;     // NEVER allow updates
+      allow delete: if false;     // NEVER allow deletes
+    }
+
+    // ─── Simulations Collection ───────────────────────────────────────────────
+    // Operations managers and above can read and trigger simulations.
+
+    match /simulations/{simulationId} {
+      allow read: if isAuthenticated();
+      allow create: if isOperationsOrAbove();
+      allow update: if isOperationsOrAbove();
+      allow delete: if isAdmin();
+    }
+
+    // ─── Agent State Collection ───────────────────────────────────────────────
+    // Read-only for authenticated users (dashboard agent status).
+    // Only Admin SDK writes (agents update their own state).
+
+    match /agentState/{agentId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+  }
+}

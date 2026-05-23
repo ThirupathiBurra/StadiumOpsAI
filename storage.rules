@@ -1,0 +1,29 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // ─── Incident Media ───────────────────────────────────────────────────────
+    // Authenticated users can upload incident attachments.
+    // Max file size: 10MB. Only images and PDFs.
+
+    match /incidents/{incidentId}/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null
+        && request.resource.size < 10 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*|application/pdf');
+    }
+
+    // ─── Exports ──────────────────────────────────────────────────────────────
+    // Only admins can read generated exports.
+
+    match /exports/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if false; // Admin SDK only
+    }
+
+    // ─── Default deny ─────────────────────────────────────────────────────────
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

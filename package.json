@@ -1,0 +1,32 @@
+{
+  "name": "stadium-ops-ai",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Enterprise-grade real-time stadium operations and crowd management platform",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "pnpm --filter web dev",
+    "build": "pnpm --filter shared build && pnpm --filter web build",
+    "build:functions": "pnpm --filter functions build",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck",
+    "seed": "pnpm --filter functions seed",
+    "deploy": "firebase deploy",
+    "deploy:hosting": "firebase deploy --only hosting",
+    "deploy:functions": "firebase deploy --only functions",
+    "deploy:rules": "firebase deploy --only firestore:rules,storage"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.0",
+    "firebase-tools": "^15.18.0",
+    "prettier": "^3.3.2",
+    "typescript": "^5.4.5"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  }
+}

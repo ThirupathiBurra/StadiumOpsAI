@@ -1,0 +1,10 @@
+packages:
+  - 'packages/*'
+  - 'apps/web'
+allowBuilds:
+  '0': protobufjs
+  '1': re2
+  '2': unrs-resolver
+  protobufjs: set this to true or false
+  re2: set this to true or false
+  unrs-resolver: set this to true or false

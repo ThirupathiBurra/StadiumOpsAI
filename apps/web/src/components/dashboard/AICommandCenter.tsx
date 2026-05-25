@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { auth } from '@/lib/firebase/auth';
 
 interface ChatMessage {
@@ -163,9 +164,13 @@ export function AICommandCenter() {
                   ? 'bg-surface-container border border-glass-border text-on-surface rounded-tr-sm'
                   : 'glass-panel text-on-surface rounded-tl-sm'
               }`}>
-                <p className="text-[13px] leading-relaxed whitespace-pre-wrap font-sans">
-                  {msg.content}
-                </p>
+                <div className={`text-[13px] leading-relaxed font-sans ${msg.role === 'agent' ? 'prose prose-invert prose-sm max-w-none prose-p:my-1 prose-ul:my-1 prose-li:my-0' : 'whitespace-pre-wrap'}`}>
+                  {msg.role === 'agent' ? (
+                    <ReactMarkdown>{msg.content}</ReactMarkdown>
+                  ) : (
+                    msg.content
+                  )}
+                </div>
                 <span className="text-[9px] text-outline-variant block mt-2 font-mono tracking-widest uppercase">
                   {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                 </span>

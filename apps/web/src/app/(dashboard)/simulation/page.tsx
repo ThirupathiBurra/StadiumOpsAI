@@ -254,18 +254,38 @@ export default function SimulationPage() {
           {log.length === 0 ? (
             <p className="text-slate-600">— Simulation log will appear here when a scenario is running —</p>
           ) : (
-            log.map((entry, i) => (
-              <div key={i} className="flex gap-2">
-                <span className="text-slate-600 flex-shrink-0">{entry.time}</span>
-                <span className={
-                  entry.type === 'success' ? 'text-emerald-400' :
-                  entry.type === 'error' ? 'text-rose-400' :
-                  'text-slate-400'
-                }>
-                  {entry.message}
-                </span>
-              </div>
-            ))
+            <div className="space-y-2">
+              {log.map((entry, i) => {
+                let icon = 'info';
+                let style = 'text-slate-300 bg-surface-container-low border-glass-border';
+                
+                if (entry.type === 'success') {
+                  icon = 'check_circle';
+                  style = 'text-emerald bg-emerald/10 border-emerald/20';
+                } else if (entry.type === 'error') {
+                  icon = 'error';
+                  style = 'text-rose bg-rose/10 border-rose/20';
+                } else if (entry.message.includes('▶ Starting')) {
+                  icon = 'play_circle';
+                  style = 'text-primary bg-primary/10 border-primary/20';
+                } else if (entry.message.toLowerCase().includes('alert') || entry.message.toLowerCase().includes('critical') || entry.message.toLowerCase().includes('incident')) {
+                  icon = 'warning';
+                  style = 'text-amber bg-amber/10 border-amber/20';
+                } else if (entry.message.includes('→')) {
+                  icon = 'trending_flat';
+                }
+
+                return (
+                  <div key={i} className={`flex gap-3 items-start p-2.5 rounded-lg border transition-all ${style}`}>
+                    <span className="material-symbols-outlined text-[16px] mt-0.5 shrink-0">{icon}</span>
+                    <div className="flex-1 flex flex-col">
+                      <span className="font-medium text-[13px] leading-snug font-sans">{entry.message.replace(/▶\s*/g, '')}</span>
+                      <span className="text-[10px] opacity-60 font-mono mt-1 tracking-widest">{entry.time}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           )}
         </div>
       </div>

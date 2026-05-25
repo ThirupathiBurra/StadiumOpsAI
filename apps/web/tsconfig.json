@@ -10,7 +10,8 @@
     "incremental": true,
     "plugins": [{ "name": "next" }],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@stadium/shared": ["./src/shared/index.ts"]
     },
     "strict": true,
     "noEmit": true,

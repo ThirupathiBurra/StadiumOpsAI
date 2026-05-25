@@ -65,8 +65,17 @@ export default function SimulationPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Simulation failed');
 
-      addLog(`✓ Scenario "${scenarioName}" started (run: ${data.runId?.slice(0, 8)}...)`, 'success');
-      addLog('→ Watch the Live Dashboard & Incident Command — events are streaming live to Firestore.');
+      // Show each event from the server-side log
+      if (Array.isArray(data.log) && data.log.length > 0) {
+        for (const entry of data.log) {
+          // strip ISO timestamp prefix for cleaner display
+          const msg = String(entry).replace(/^\[.*?\]\s*/, '');
+          addLog(`  ${msg}`);
+        }
+      }
+
+      addLog(`✓ Scenario "${scenarioName}" complete — Live Dashboard updated`, 'success');
+      addLog('→ Zone statuses and incidents are now live in Firestore.');
     } catch (err: any) {
       addLog(`✗ Error: ${err.message}`, 'error');
     } finally {

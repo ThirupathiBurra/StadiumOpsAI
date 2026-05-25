@@ -1,23 +1,45 @@
 import React from 'react';
 import type { Incident } from '@stadium/shared';
-import { Clock, AlertCircle } from 'lucide-react';
 
 interface IncidentFeedProps {
   incidents: Incident[];
 }
 
 export function IncidentFeed({ incidents }: IncidentFeedProps) {
-  // Severity styling map
-  const severityStyles = {
-    low: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
-    medium: 'text-amber-400 bg-amber-500/10 border-amber-500/20',
-    high: 'text-orange-400 bg-orange-500/10 border-orange-500/20',
-    critical: 'text-rose-400 bg-rose-500/10 border-rose-500/20',
+  // Cyber-Zen severity styling map
+  const severityStyles: Record<string, { badge: string; border: string; glow: string; dot: string; pulse: boolean }> = {
+    low: {
+      badge: 'text-primary bg-primary/10 border-primary/30',
+      border: 'border-l-primary',
+      glow: '',
+      dot: 'bg-primary',
+      pulse: false
+    },
+    medium: {
+      badge: 'text-secondary bg-secondary/10 border-secondary/30',
+      border: 'border-l-secondary',
+      glow: '',
+      dot: 'bg-secondary',
+      pulse: false
+    },
+    high: {
+      badge: 'text-secondary-container bg-secondary-container/10 border-secondary-container/30',
+      border: 'border-l-secondary-container',
+      glow: 'glow-box-orange',
+      dot: 'bg-secondary-container',
+      pulse: true
+    },
+    critical: {
+      badge: 'text-tertiary-container bg-tertiary-container/10 border-tertiary-container/30',
+      border: 'border-l-tertiary-container',
+      glow: 'glow-box-rose',
+      dot: 'bg-tertiary-container',
+      pulse: true
+    },
   };
 
   const formatTime = (timestamp: any) => {
     if (!timestamp) return 'Now';
-    // Handle Firestore Timestamp or Date object
     const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
     return new Intl.DateTimeFormat('en-US', {
       hour: 'numeric',
@@ -28,14 +50,14 @@ export function IncidentFeed({ incidents }: IncidentFeedProps) {
   };
 
   return (
-    <div className="col-span-1 flex flex-col h-full">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-          <AlertCircle size={14} className="text-brand-400" />
+    <div className="flex flex-col h-full">
+      <div className="flex items-center justify-between px-1 mb-4">
+        <h2 className="text-[11px] font-bold uppercase tracking-[0.3em] text-outline-variant flex items-center gap-2">
+          <span className="material-symbols-outlined text-[16px]">notifications_active</span>
           Live Incident Feed
         </h2>
         {incidents.length > 0 && (
-          <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" aria-hidden="true" />
+          <div className="pulse-indicator w-2 h-2 rounded-full bg-tertiary-container mr-2" aria-hidden="true" />
         )}
       </div>
 
@@ -47,49 +69,45 @@ export function IncidentFeed({ incidents }: IncidentFeedProps) {
         aria-live="polite"
       >
         {incidents.length === 0 ? (
-          <div className="glass-card p-8 text-center flex flex-col items-center justify-center h-full opacity-60">
+          <div className="glass-panel p-8 rounded-xl text-center flex flex-col items-center justify-center h-full opacity-60">
             <div className="w-12 h-12 rounded-full bg-surface-raised flex items-center justify-center mb-4">
-              <AlertCircle size={20} className="text-emerald-500" />
+              <span className="material-symbols-outlined text-primary text-[24px]">verified</span>
             </div>
-            <p className="text-sm text-slate-300 font-medium">No active incidents</p>
-            <p className="text-xs text-slate-500 mt-1">All zones are operating normally</p>
+            <p className="text-sm text-on-surface font-medium">No active incidents</p>
+            <p className="text-xs text-outline-variant mt-1">All zones are operating normally</p>
           </div>
         ) : (
           incidents.map((incident) => {
-            const style = severityStyles[incident.severity] || severityStyles.low;
+            const style = severityStyles[incident.severity] || severityStyles['low'];
             
             return (
               <div 
                 key={incident.id} 
-                className={`glass-card p-4 animate-slide-in-up border-l-4 ${
-                  incident.severity === 'critical' ? 'border-l-rose-500' : 
-                  incident.severity === 'high' ? 'border-l-orange-500' :
-                  incident.severity === 'medium' ? 'border-l-amber-500' : 'border-l-emerald-500'
-                }`}
+                className={`glass-panel p-4 rounded-xl animate-slide-in-up border-l-4 ${style.border} ${style.glow}`}
               >
                 <div className="flex items-start justify-between mb-2">
-                  <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${style}`}>
+                  <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${style.badge}`}>
                     {incident.severity}
                   </span>
-                  <div className="flex items-center gap-1 text-[10px] text-slate-500">
-                    <Clock size={10} />
+                  <div className="flex items-center gap-1 text-[10px] text-outline-variant font-mono">
+                    <span className="material-symbols-outlined text-[12px]">schedule</span>
                     {formatTime(incident.createdAt)}
                   </div>
                 </div>
                 
-                <h4 className="text-sm font-semibold text-slate-200 mb-1 leading-snug">
+                <h4 className="text-sm font-semibold text-on-surface mb-1 leading-snug">
                   {incident.title}
                 </h4>
                 
-                <p className="text-xs text-slate-400 line-clamp-2 mb-2">
+                <p className="text-xs text-on-surface-variant line-clamp-2 mb-2">
                   {incident.description}
                 </p>
 
-                <div className="flex items-center justify-between mt-3 pt-3 border-t border-surface-border">
-                  <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider">
-                    Zone: <span className="text-slate-300">{incident.zoneName}</span>
+                <div className="flex items-center justify-between mt-3 pt-3 border-t border-glass-border">
+                  <span className="text-[10px] font-medium text-outline-variant uppercase tracking-wider">
+                    Zone: <span className="text-on-surface ml-1">{incident.zoneName}</span>
                   </span>
-                  <span className="text-[10px] font-medium text-brand-400 capitalize">
+                  <span className="text-[10px] font-medium text-primary capitalize">
                     {incident.type.replace('_', ' ')}
                   </span>
                 </div>

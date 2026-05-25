@@ -1,6 +1,5 @@
 import React from 'react';
 import type { Zone, Incident, Alert } from '@stadium/shared';
-import { Users, AlertTriangle, ShieldAlert, Activity } from 'lucide-react';
 
 interface KPIBarProps {
   zones: Zone[];
@@ -8,82 +7,90 @@ interface KPIBarProps {
   alerts: Alert[];
 }
 
-export function KPIBar({ zones, incidents, alerts }: KPIBarProps) {
-  // Compute metrics
-  const totalOccupancy = zones.reduce((sum, z) => sum + (z.currentOccupancy || 0), 0);
-  const activeIncidents = incidents.filter(i => ['open', 'acknowledged', 'in_progress'].includes(i.status)).length;
-  const activeAlerts = alerts.filter(a => a.status === 'active').length;
-  const criticalZones = zones.filter(z => ['critical', 'evacuating'].includes(z.status)).length;
+interface KPICardProps {
+  icon: string;
+  value: string | number;
+  label: string;
+  sublabel: string;
+  colorClass: string;
+  pulse?: boolean;
+  badge?: string;
+}
 
-  const formatNumber = (num: number) => new Intl.NumberFormat('en-US').format(num);
+function KPICard({ icon, value, label, sublabel, colorClass, pulse, badge }: KPICardProps) {
+  return (
+    <div className="glass-panel rounded-xl p-card-padding flex flex-col justify-between min-h-[140px]">
+      <div className="flex justify-between items-start">
+        <div className={`relative ${pulse ? 'pulse-indicator' : ''}`}>
+          <span className={`material-symbols-outlined text-[28px] ${colorClass}`}>{icon}</span>
+        </div>
+        {badge && (
+          <span className={`text-[10px] font-bold uppercase tracking-[0.2em] ${colorClass}`}>
+            {badge}
+          </span>
+        )}
+      </div>
+      <div>
+        <h3
+          className={`font-display text-[42px] font-bold tracking-tighter leading-none mb-1 ${colorClass}`}
+          style={{ fontFamily: 'Geist, system-ui, sans-serif' }}
+        >
+          {value}
+        </h3>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-outline-variant">
+          {label}
+        </p>
+        {sublabel && (
+          <p className="text-[10px] text-outline-variant/60 mt-0.5">{sublabel}</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export function KPIBar({ zones, incidents, alerts }: KPIBarProps) {
+  const totalOccupancy    = zones.reduce((sum, z) => sum + (z.currentOccupancy || 0), 0);
+  const activeIncidents   = incidents.filter(i => ['open', 'acknowledged', 'in_progress'].includes(i.status)).length;
+  const activeAlerts      = alerts.filter(a => a.status === 'active').length;
+  const criticalZones     = zones.filter(z => ['critical', 'evacuating'].includes(z.status)).length;
+  const formatNum = (n: number) => new Intl.NumberFormat('en-US').format(n);
 
   return (
-    <div className="grid grid-cols-4 gap-4" role="region" aria-label="Stadium metrics">
-      {/* Total Occupancy */}
-      <div className="glass-card p-5 relative overflow-hidden group">
-        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-          <Users size={48} />
-        </div>
-        <div className="flex items-center gap-2">
-          <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">Total Occupancy</p>
-        </div>
-        <p className="text-3xl font-bold mt-2 text-slate-100">{formatNumber(totalOccupancy)}</p>
-        <p className="text-xs text-slate-600 mt-1">fans currently in stadium</p>
-      </div>
-
-      {/* Active Incidents */}
-      <div className="glass-card p-5 relative overflow-hidden group">
-        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity text-yellow-400">
-          <AlertTriangle size={48} />
-        </div>
-        <div className="flex items-center gap-2">
-          <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">Active Incidents</p>
-          {activeIncidents > 0 && (
-            <span className="flex h-2 w-2 relative">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-yellow-500"></span>
-            </span>
-          )}
-        </div>
-        <p className={`text-3xl font-bold mt-2 ${activeIncidents > 0 ? 'text-yellow-400' : 'text-slate-100'}`}>
-          {formatNumber(activeIncidents)}
-        </p>
-        <p className="text-xs text-slate-600 mt-1">open or in progress</p>
-      </div>
-
-      {/* Active Alerts */}
-      <div className="glass-card p-5 relative overflow-hidden group">
-        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity text-red-400">
-          <ShieldAlert size={48} />
-        </div>
-        <div className="flex items-center gap-2">
-          <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">Active Alerts</p>
-          {activeAlerts > 0 && (
-            <span className="flex h-2 w-2 relative">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
-            </span>
-          )}
-        </div>
-        <p className={`text-3xl font-bold mt-2 ${activeAlerts > 0 ? 'text-red-400' : 'text-slate-100'}`}>
-          {formatNumber(activeAlerts)}
-        </p>
-        <p className="text-xs text-slate-600 mt-1">requiring attention</p>
-      </div>
-
-      {/* Critical Zones */}
-      <div className="glass-card p-5 relative overflow-hidden group">
-        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity text-orange-400">
-          <Activity size={48} />
-        </div>
-        <div className="flex items-center gap-2">
-          <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">Critical Zones</p>
-        </div>
-        <p className={`text-3xl font-bold mt-2 ${criticalZones > 0 ? 'text-orange-400' : 'text-slate-100'}`}>
-          {formatNumber(criticalZones)}
-        </p>
-        <p className="text-xs text-slate-600 mt-1">high risk or evacuating</p>
-      </div>
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-base" role="region" aria-label="Stadium metrics">
+      <KPICard
+        icon="groups"
+        value={formatNum(totalOccupancy)}
+        label="Fans Currently In Stadium"
+        sublabel="Live headcount"
+        colorClass="text-on-surface"
+        badge="Live Data"
+      />
+      <KPICard
+        icon="warning"
+        value={activeIncidents}
+        label="Active Incidents"
+        sublabel="Open or in progress"
+        colorClass={activeIncidents > 0 ? 'text-secondary' : 'text-on-surface'}
+        pulse={activeIncidents > 0}
+        badge={activeIncidents > 0 ? 'Active' : undefined}
+      />
+      <KPICard
+        icon="shield"
+        value={activeAlerts}
+        label="Active Alerts"
+        sublabel="Requiring action"
+        colorClass={activeAlerts > 0 ? 'text-tertiary-container' : 'text-on-surface'}
+        pulse={activeAlerts > 0}
+        badge={activeAlerts > 0 ? 'Critical' : undefined}
+      />
+      <KPICard
+        icon="dynamic_feed"
+        value={criticalZones}
+        label="Critical Zones"
+        sublabel="High risk or evacuating"
+        colorClass={criticalZones > 0 ? 'text-secondary-container' : 'text-on-surface'}
+        badge={criticalZones > 0 ? 'Risk Level' : undefined}
+      />
     </div>
   );
 }

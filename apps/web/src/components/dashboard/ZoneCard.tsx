@@ -1,83 +1,132 @@
 import React from 'react';
 import type { Zone } from '@stadium/shared';
-import { MapPin, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
 interface ZoneCardProps {
   zone: Zone;
-  previousOccupancy?: number; // Used for trend indicator
+  previousOccupancy?: number;
 }
 
+// ── Status config map (Cyber-Zen palette) ─────────────────────────────────────
+const STATUS_CONFIG: Record<string, {
+  badge: string;       // badge text color
+  badgeBg: string;     // badge bg
+  badgeBorder: string; // badge border
+  dot: string;         // dot color
+  bar: string;         // progress bar color
+  barGlow: string;     // glow class
+  pulse: boolean;
+  label: string;
+}> = {
+  normal: {
+    badge: 'text-primary',
+    badgeBg: 'bg-primary/10',
+    badgeBorder: 'border-primary/30',
+    dot: 'bg-primary',
+    bar: 'bg-primary',
+    barGlow: 'glow-box-emerald',
+    pulse: false,
+    label: 'Normal',
+  },
+  warning: {
+    badge: 'text-secondary',
+    badgeBg: 'bg-secondary/10',
+    badgeBorder: 'border-secondary/30',
+    dot: 'bg-secondary',
+    bar: 'bg-secondary',
+    barGlow: 'glow-box-amber',
+    pulse: false,
+    label: 'Warning',
+  },
+  critical: {
+    badge: 'text-tertiary-container',
+    badgeBg: 'bg-tertiary-container/10',
+    badgeBorder: 'border-tertiary-container/30',
+    dot: 'bg-tertiary-container',
+    bar: 'bg-tertiary-container',
+    barGlow: 'glow-box-rose',
+    pulse: true,
+    label: 'Critical',
+  },
+  evacuating: {
+    badge: 'text-secondary-container',
+    badgeBg: 'bg-secondary-container/10',
+    badgeBorder: 'border-secondary-container/30',
+    dot: 'bg-secondary-container',
+    bar: 'bg-secondary-container',
+    barGlow: 'glow-box-orange',
+    pulse: true,
+    label: 'Evacuating',
+  },
+  closed: {
+    badge: 'text-outline-variant',
+    badgeBg: 'bg-surface-variant/30',
+    badgeBorder: 'border-outline-variant/20',
+    dot: 'bg-outline-variant',
+    bar: 'bg-outline-variant',
+    barGlow: '',
+    pulse: false,
+    label: 'Closed',
+  },
+};
+
 export function ZoneCard({ zone, previousOccupancy }: ZoneCardProps) {
-  // Status styling map
-  const statusStyles: Record<string, { bg: string; border: string; text: string; badge: string; pulse?: boolean }> = {
-    normal: { bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', text: 'text-emerald-400', badge: 'bg-emerald-500' },
-    warning: { bg: 'bg-amber-500/10', border: 'border-amber-500/30', text: 'text-amber-400', badge: 'bg-amber-500' },
-    critical: { bg: 'bg-rose-500/10', border: 'border-rose-500/40', text: 'text-rose-400', badge: 'bg-rose-500' },
-    evacuating: { bg: 'bg-orange-500/10', border: 'border-orange-500/50', text: 'text-orange-400', badge: 'bg-orange-500', pulse: true },
-    closed: { bg: 'bg-slate-800/50', border: 'border-slate-700', text: 'text-slate-400', badge: 'bg-slate-600' },
-  };
+  const cfg     = STATUS_CONFIG[zone.status] ?? STATUS_CONFIG['normal'];
+  const percent = Math.min(Math.round(zone.occupancyPercent ?? 0), 100);
+  const formatNum = (n: number) => new Intl.NumberFormat('en-US').format(n);
 
-  const style = statusStyles[zone.status] || statusStyles['normal'];
-  const percent = Math.min(Math.round(zone.occupancyPercent), 100);
-
-  // Determine trend
-  let TrendIcon = Minus;
-  let trendColor = 'text-slate-500';
+  // Trend arrow
+  let trend: 'up' | 'down' | 'flat' = 'flat';
   if (previousOccupancy !== undefined) {
-    if (zone.currentOccupancy > previousOccupancy + 50) {
-      TrendIcon = TrendingUp;
-      trendColor = 'text-rose-400';
-    } else if (zone.currentOccupancy < previousOccupancy - 50) {
-      TrendIcon = TrendingDown;
-      trendColor = 'text-emerald-400';
-    }
+    if (zone.currentOccupancy > previousOccupancy + 50) trend = 'up';
+    else if (zone.currentOccupancy < previousOccupancy - 50) trend = 'down';
   }
-
-  const formatNumber = (num: number) => new Intl.NumberFormat('en-US').format(num);
+  const trendIcon = trend === 'up' ? 'trending_up' : trend === 'down' ? 'trending_down' : 'trending_flat';
+  const trendColor = trend === 'up' ? 'text-tertiary-container' : trend === 'down' ? 'text-primary' : 'text-outline-variant';
 
   return (
-    <div className={`glass-card p-4 transition-all duration-300 border ${style.border} ${style.bg}`}>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-md bg-surface-raised border border-surface-border">
-            <MapPin size={14} className="text-slate-300" />
-          </div>
-          <div>
-            <h3 className="text-sm font-semibold text-slate-200">{zone.name}</h3>
-            <p className="text-[10px] text-slate-500 uppercase tracking-wider">{zone.shortCode}</p>
-          </div>
+    <div className="glass-panel rounded-xl p-5 relative overflow-hidden group hover:border-white/15 transition-all duration-300">
+
+      {/* Header row */}
+      <div className="flex justify-between items-start mb-4">
+        <div className="min-w-0">
+          <h4
+            className="text-[18px] font-semibold text-on-surface leading-tight truncate"
+            style={{ fontFamily: 'Geist, sans-serif', letterSpacing: '-0.01em' }}
+          >
+            {zone.name}
+          </h4>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-outline-variant mt-0.5">
+            {zone.shortCode}
+          </p>
         </div>
-        
-        {/* Status Badge */}
-        <div className={`flex items-center gap-1.5 px-2 py-1 rounded-full bg-surface-raised border ${style.border}`}>
-          <div className={`w-1.5 h-1.5 rounded-full ${style.badge} ${style.pulse ? 'animate-pulse' : ''}`} />
-          <span className={`text-[10px] font-medium uppercase tracking-wider ${style.text}`}>
-            {zone.status}
+
+        {/* Status badge */}
+        <div className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1 rounded-full ${cfg.badgeBg} ${cfg.badgeBorder} border ml-2`}>
+          <span className={`relative w-2 h-2 rounded-full ${cfg.dot} flex-shrink-0 ${cfg.pulse ? 'pulse-indicator' : ''}`} />
+          <span className={`text-[10px] font-bold uppercase tracking-widest ${cfg.badge}`}>
+            {cfg.label}
           </span>
         </div>
       </div>
 
-      {/* Occupancy Stats */}
-      <div className="flex items-end justify-between mb-2">
-        <div>
-          <div className="flex items-center gap-1">
-            <span className="text-2xl font-bold text-slate-100">{formatNumber(zone.currentOccupancy)}</span>
-            <span className="text-xs text-slate-500 mb-1">/ {formatNumber(zone.capacity)}</span>
-          </div>
-        </div>
-        <div className="flex flex-col items-end">
-          <div className="flex items-center gap-1">
-            <TrendIcon size={12} className={trendColor} />
-            <span className="text-sm font-semibold text-slate-200">{percent}%</span>
-          </div>
+      {/* Occupancy row */}
+      <div className="flex justify-between items-end mb-3">
+        <span className="text-[28px] font-bold text-on-surface leading-none" style={{ fontFamily: 'Geist, sans-serif', letterSpacing: '-0.03em' }}>
+          {formatNum(zone.currentOccupancy)}
+          <span className="text-base font-normal text-on-surface-variant ml-1">
+            / {formatNum(zone.capacity)}
+          </span>
+        </span>
+        <div className="flex items-center gap-1">
+          <span className={`material-symbols-outlined text-[16px] ${trendColor}`}>{trendIcon}</span>
+          <span className={`text-sm font-bold ${cfg.badge}`}>{percent}%</span>
         </div>
       </div>
 
-      {/* Progress Bar */}
-      <div className="h-1.5 w-full bg-surface-raised rounded-full overflow-hidden">
-        <div 
-          className={`h-full rounded-full transition-all duration-1000 ease-out ${style.badge}`}
+      {/* Emissive progress bar */}
+      <div className="w-full h-px bg-surface-container rounded-full overflow-hidden">
+        <div
+          className={`h-full rounded-full transition-all duration-1000 ease-out ${cfg.bar} ${cfg.barGlow}`}
           style={{ width: `${percent}%` }}
         />
       </div>

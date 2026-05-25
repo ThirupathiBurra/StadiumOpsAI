@@ -6,71 +6,72 @@ interface ZoneGridProps {
   zones: Zone[];
 }
 
+const REQUIRED_SHORT_CODES = [
+  'N-GT',   // North Gate
+  'S-GT',   // South Gate
+  'E-GT',   // East Gate
+  'W-GT',   // West Gate
+  'N-STD',  // North Stand
+  'S-STD',  // South Stand
+  'VIP-1',  // VIP Lounge
+  'MED-1',  // Medical Zone
+];
+
 export function ZoneGrid({ zones }: ZoneGridProps) {
-  // We want to ensure these exact 8 zones are shown, in this order if possible
-  const requiredShortCodes = [
-    'N-GT', // North Gate
-    'S-GT', // South Gate
-    'E-GT', // East Gate
-    'W-GT', // West Gate
-    'N-STD', // North Stand
-    'S-STD', // South Stand
-    'VIP-1', // VIP Lounge
-    'MED-1', // Medical Zone
-  ];
+  const displayedZones = REQUIRED_SHORT_CODES
+    .map(code => zones.find(z => z.shortCode === code))
+    .filter((z): z is Zone => z !== undefined);
 
-  // Map by shortCode or name fallback to align with the required 8
-  const displayedZones = requiredShortCodes.map(code => {
-    return zones.find(z => z.shortCode === code);
-  }).filter((z): z is Zone => z !== undefined);
-
-  // If the database doesn't exactly match the shortCodes (e.g. fresh init), 
-  // we just show the first 8 zones available
   const zonesToRender = displayedZones.length > 0 ? displayedZones : zones.slice(0, 8);
 
   return (
-    <div className="col-span-2 flex flex-col h-full">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-          <div className="w-1.5 h-1.5 rounded-full bg-brand-500"></div>
-          Stadium Zones
+    <div className="flex flex-col h-full">
+      {/* Section header */}
+      <div className="flex items-center justify-between px-1 mb-4">
+        <h2
+          className="text-[11px] font-bold uppercase tracking-[0.3em] text-outline-variant flex items-center gap-2"
+        >
+          <span className="material-symbols-outlined text-[16px]">location_on</span>
+          Live Stadium Zones
         </h2>
-        <span className="text-xs text-slate-500">{zonesToRender.length} core zones monitored</span>
+        <span className="text-[10px] font-semibold uppercase tracking-widest text-outline-variant/60">
+          {zonesToRender.length} zones
+        </span>
       </div>
-      
+
+      {/* Zone card grid */}
       <div
-        className="grid grid-cols-2 md:grid-cols-4 gap-4 flex-1"
+        className="grid grid-cols-2 gap-4 flex-1"
         id="zone-grid"
         role="grid"
         aria-label="Stadium zone status grid"
       >
-        {zonesToRender.length === 0 ? (
-          // Loading / Empty state
-          Array.from({ length: 8 }).map((_, i) => (
-            <div
-              key={i}
-              className="glass-card p-4 animate-pulse flex flex-col justify-between min-h-[120px]"
-              role="gridcell"
-              aria-label="Loading zone"
-            >
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-5 h-5 rounded bg-surface-raised" />
-                <div className="h-4 bg-surface-raised rounded w-20" />
-              </div>
-              <div>
-                <div className="flex justify-between mb-2">
-                  <div className="h-6 bg-surface-raised rounded w-16" />
-                  <div className="h-4 bg-surface-raised rounded w-8" />
+        {zonesToRender.length === 0
+          ? /* Loading skeleton */
+            Array.from({ length: 8 }).map((_, i) => (
+              <div
+                key={i}
+                className="glass-panel rounded-xl p-5 animate-pulse flex flex-col justify-between min-h-[140px]"
+                role="gridcell"
+                aria-label="Loading zone"
+              >
+                <div className="flex justify-between items-start">
+                  <div>
+                    <div className="h-4 w-24 bg-surface-variant/50 rounded mb-1.5" />
+                    <div className="h-2.5 w-12 bg-surface-variant/30 rounded" />
+                  </div>
+                  <div className="h-5 w-20 bg-surface-variant/30 rounded-full" />
                 </div>
-                <div className="h-1.5 bg-surface-raised rounded w-full" />
+                <div>
+                  <div className="h-7 w-28 bg-surface-variant/40 rounded mb-3" />
+                  <div className="h-px w-full bg-surface-variant/40 rounded-full" />
+                </div>
               </div>
-            </div>
-          ))
-        ) : (
-          zonesToRender.map((zone) => (
-            <ZoneCard key={zone.id} zone={zone} />
-          ))
-        )}
+            ))
+          : zonesToRender.map((zone) => (
+              <ZoneCard key={zone.id} zone={zone} />
+            ))
+        }
       </div>
     </div>
   );

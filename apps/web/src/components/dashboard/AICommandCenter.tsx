@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Sparkles, User, Loader2, Command } from 'lucide-react';
 import { auth } from '@/lib/firebase/auth';
 
 interface ChatMessage {
@@ -17,7 +16,6 @@ export function AICommandCenter() {
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to bottom
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -82,29 +80,29 @@ export function AICommandCenter() {
   };
 
   return (
-    <div className="glass-card flex flex-col h-full border-brand-500/20 relative overflow-hidden group">
+    <div className="glass-panel flex flex-col h-full rounded-xl relative overflow-hidden group">
       {/* Header */}
-      <div className="p-4 border-b border-surface-border flex items-center justify-between bg-surface-base z-10">
-        <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-md bg-brand-500/20 border border-brand-500/30 text-brand-400">
-            <Sparkles size={16} />
+      <div className="p-4 border-b border-glass-border flex items-center justify-between bg-surface-base/50 z-10 backdrop-blur-md">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-primary/10 border border-primary/20 text-primary glow-emerald">
+            <span className="material-symbols-outlined text-[18px]">memory</span>
           </div>
           <div>
-            <h2 className="text-sm font-semibold text-slate-100">StadiumOps AI Assistant</h2>
-            <p className="text-[10px] text-slate-400">Real-Time Operations Intelligence</p>
+            <h2 className="text-sm font-semibold text-on-surface" style={{ fontFamily: 'Geist, sans-serif' }}>StadiumOps AI Command</h2>
+            <p className="text-[10px] text-outline-variant font-mono uppercase tracking-widest mt-0.5">Tactical Intel</p>
           </div>
         </div>
-        <div className="flex items-center gap-2 px-2 py-1 rounded bg-surface-raised border border-surface-border">
-          <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="text-[10px] font-medium text-slate-300 uppercase tracking-wider">Online</span>
+        <div className="flex items-center gap-2 px-2 py-1 rounded-full border border-glass-border bg-black/20">
+          <div className="pulse-indicator w-1.5 h-1.5 rounded-full bg-primary" />
+          <span className="text-[9px] font-bold text-primary uppercase tracking-[0.2em]">Live</span>
         </div>
       </div>
 
       {/* Global Command Input (Top) */}
-      <div className="p-4 border-b border-surface-border bg-surface-raised/30 z-10">
-        <form onSubmit={handleSubmit} className="relative">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Command size={16} className="text-brand-400" />
+      <div className="p-4 border-b border-glass-border bg-surface-container-low/50 z-10">
+        <form onSubmit={handleSubmit} className="relative group/form">
+          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+            <span className="material-symbols-outlined text-outline-variant group-focus-within/form:text-primary transition-colors">terminal</span>
           </div>
           <input
             type="text"
@@ -112,28 +110,34 @@ export function AICommandCenter() {
             onChange={(e) => setInput(e.target.value)}
             disabled={isLoading}
             placeholder="Issue command to StadiumOps AI..."
-            className="w-full bg-surface-base border border-surface-border rounded-lg pl-10 pr-12 py-3 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500/50 transition-all shadow-inner"
+            className="ops-input bg-surface-container-lowest"
           />
           <div className="absolute inset-y-0 right-0 pr-2 flex items-center">
             <button
               type="submit"
               disabled={isLoading || !input.trim()}
-              className="p-1.5 rounded-md bg-brand-600 text-white hover:bg-brand-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="p-2 rounded-full bg-primary text-on-primary hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
-              {isLoading ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+              {isLoading ? (
+                <span className="material-symbols-outlined text-[18px] animate-spin">refresh</span>
+              ) : (
+                <span className="material-symbols-outlined text-[18px]">arrow_upward</span>
+              )}
             </button>
           </div>
         </form>
       </div>
 
       {/* Chat History */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar z-10 bg-surface-base/20">
+      <div className="flex-1 overflow-y-auto p-5 space-y-5 custom-scrollbar z-10 bg-gradient-to-b from-transparent to-surface-base/30">
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center opacity-60">
-            <Sparkles size={32} className="text-brand-500 mb-3" />
-            <p className="text-sm font-medium text-slate-300">Ready for instructions</p>
-            <p className="text-xs text-slate-500 mt-1 max-w-[200px]">
-              Try asking about zone statuses, critical incidents, or direct the AI to handle a situation.
+            <div className="w-16 h-16 rounded-full bg-surface-raised flex items-center justify-center mb-4 border border-glass-border">
+              <span className="material-symbols-outlined text-primary text-[28px]">graphic_eq</span>
+            </div>
+            <p className="text-sm font-medium text-on-surface font-mono">AWAITING INSTRUCTIONS</p>
+            <p className="text-xs text-outline-variant mt-2 max-w-[220px] leading-relaxed">
+              Query zone telemetry, deploy security units, or trigger emergency protocols.
             </p>
           </div>
         ) : (
@@ -143,23 +147,27 @@ export function AICommandCenter() {
               className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}
             >
               {/* Avatar */}
-              <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+              <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center border ${
                 msg.role === 'user' 
-                  ? 'bg-slate-700 text-slate-300' 
-                  : 'bg-brand-600 text-white border border-brand-400'
+                  ? 'bg-surface-container-highest text-on-surface border-glass-border' 
+                  : 'bg-primary/20 text-primary border-primary/30 glow-emerald'
               }`}>
-                {msg.role === 'user' ? <User size={14} /> : <Sparkles size={14} />}
+                <span className="material-symbols-outlined text-[16px]">
+                  {msg.role === 'user' ? 'person' : 'memory'}
+                </span>
               </div>
               
               {/* Message bubble */}
-              <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+              <div className={`max-w-[85%] rounded-2xl px-4 py-3 ${
                 msg.role === 'user'
-                  ? 'bg-surface-base border border-surface-border text-slate-200 rounded-tr-sm'
-                  : 'bg-surface-raised border border-surface-border text-slate-200 rounded-tl-sm'
+                  ? 'bg-surface-container border border-glass-border text-on-surface rounded-tr-sm'
+                  : 'glass-panel text-on-surface rounded-tl-sm'
               }`}>
-                <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
-                <span className="text-[9px] text-slate-500 block mt-2 opacity-60">
-                  {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                <p className="text-[13px] leading-relaxed whitespace-pre-wrap font-sans">
+                  {msg.content}
+                </p>
+                <span className="text-[9px] text-outline-variant block mt-2 font-mono tracking-widest uppercase">
+                  {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                 </span>
               </div>
             </div>
@@ -167,14 +175,13 @@ export function AICommandCenter() {
         )}
         
         {isLoading && (
-          <div className="flex gap-3">
-            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-brand-600 text-white border border-brand-400 flex items-center justify-center">
-              <Sparkles size={14} />
+          <div className="flex gap-3 animate-fade-in">
+            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/20 text-primary border border-primary/30 flex items-center justify-center glow-emerald">
+              <span className="material-symbols-outlined text-[16px] animate-spin">refresh</span>
             </div>
-            <div className="bg-surface-raised border border-surface-border rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-brand-400 animate-bounce" style={{ animationDelay: '0ms' }} />
-              <span className="w-1.5 h-1.5 rounded-full bg-brand-400 animate-bounce" style={{ animationDelay: '150ms' }} />
-              <span className="w-1.5 h-1.5 rounded-full bg-brand-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+            <div className="glass-panel rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-2">
+              <span className="text-[12px] text-primary font-mono uppercase tracking-widest">Processing</span>
+              <span className="ai-cursor" />
             </div>
           </div>
         )}

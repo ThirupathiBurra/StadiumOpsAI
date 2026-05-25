@@ -8,7 +8,6 @@ import { useAlerts } from '@/lib/hooks/useAlerts';
 import { KPIBar } from '@/components/dashboard/KPIBar';
 import { ZoneGrid } from '@/components/dashboard/ZoneGrid';
 import { IncidentFeed } from '@/components/dashboard/IncidentFeed';
-import { AICommandCenter } from '@/components/dashboard/AICommandCenter';
 import { SimulationControl } from '@/components/dashboard/SimulationControl';
 
 export default function DashboardPage() {
@@ -57,12 +56,9 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Right Column: AI & Incident Feed (4 cols on xl) */}
+        {/* Right Column: Incident Feed (4 cols on xl) */}
         <div className="xl:col-span-4 space-y-6 flex flex-col xl:h-[calc(100vh-280px)] min-h-[800px]">
-          <div className="h-1/2 min-h-[400px]">
-            <AICommandCenter />
-          </div>
-          <div className="h-1/2 min-h-[400px] overflow-hidden flex flex-col">
+          <div className="h-full min-h-[800px] flex flex-col">
             <IncidentFeed incidents={incidents} />
           </div>
         </div>

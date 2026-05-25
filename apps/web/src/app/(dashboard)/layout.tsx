@@ -9,7 +9,7 @@ import type { User } from 'firebase/auth';
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Live Dashboard', icon: 'dashboard', id: 'nav-dashboard' },
   { href: '/incidents', label: 'Incident Command', icon: 'crisis_alert', id: 'nav-incidents' },
-  { href: '/ai-console', label: 'AI Console', icon: 'memory', id: 'nav-ai-console' },
+  { href: '/ai-console', label: 'AI Intelligence Hub', icon: 'memory', id: 'nav-ai-console' },
   { href: '/audit', label: 'Audit Logs', icon: 'manage_search', id: 'nav-audit' },
   { href: '/simulation', label: 'Simulation', icon: 'sports_esports', id: 'nav-simulation' },
 ];

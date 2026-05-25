@@ -11,6 +11,13 @@ interface ChatMessage {
   timestamp: Date;
 }
 
+const QUICK_PROMPTS = [
+  'Summarise current stadium situation',
+  'Which zones need immediate attention?',
+  'Recommend evacuation route for North Stand',
+  'What is the current overall risk level?',
+];
+
 export function AICommandCenter() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
@@ -25,14 +32,16 @@ export function AICommandCenter() {
     scrollToBottom();
   }, [messages]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() || isLoading) return;
+  const handleSubmit = async (e?: React.FormEvent, overrideInput?: string) => {
+    if (e) e.preventDefault();
+    
+    const queryText = (overrideInput || input).trim();
+    if (!queryText || isLoading) return;
 
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
       role: 'user',
-      content: input.trim(),
+      content: queryText,
       timestamp: new Date(),
     };
 
@@ -50,7 +59,7 @@ export function AICommandCenter() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ query: userMessage.content }),
+        body: JSON.stringify({ query: queryText }),
       });
 
       const data = await res.json();
@@ -99,12 +108,25 @@ export function AICommandCenter() {
         </div>
       </div>
 
+      {/* Quick Prompts */}
+      {messages.length === 0 && (
+        <div className="flex flex-wrap gap-2 px-4 pb-4">
+          {QUICK_PROMPTS.map((prompt, i) => (
+            <button
+              key={i}
+              onClick={() => handleSubmit(undefined, prompt)}
+              disabled={isLoading}
+              className="btn-ghost py-1.5 text-xs text-outline-variant hover:text-primary disabled:opacity-50 transition-colors"
+            >
+              {prompt}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Global Command Input (Top) */}
       <div className="p-4 border-b border-glass-border bg-surface-container-low/50 z-10">
-        <form onSubmit={handleSubmit} className="relative group/form">
-          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-            <span className="material-symbols-outlined text-outline-variant group-focus-within/form:text-primary transition-colors">terminal</span>
-          </div>
+        <form onSubmit={(e) => handleSubmit(e)} className="relative group/form">
           <input
             type="text"
             value={input}

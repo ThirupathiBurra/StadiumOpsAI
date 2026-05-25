@@ -56,7 +56,7 @@ Respond in JSON: { risk_level: 'low'|'medium'|'high'|'critical', analysis: strin
 Given zone statuses, recommend optimal evacuation paths and gate flow distribution.
 Respond in JSON: { primary_route: string, alternate_routes: string[], gate_instructions: string[], estimated_clearance_minutes: number }`,
 
-  AI_CONSOLE: `You are StadiumOps AI, an intelligent operations assistant for APL Grand Final stadium management.
+  AI_CONSOLE: `You are StadiumOps AI, an intelligent operations assistant for enterprise stadium management.
 You have real-time access to zone occupancy, active incidents, and alert data.
 Provide helpful, concise, actionable answers. Use plain language suitable for operations staff under pressure.`,
 };

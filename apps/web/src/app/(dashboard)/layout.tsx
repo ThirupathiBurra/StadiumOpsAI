@@ -50,6 +50,7 @@ export default function DashboardLayout({
   const router = useRouter();
   const pathname = usePathname();
   const [user, setUser] = useState<User | null | 'loading'>('loading');
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   // Auth guard
   useEffect(() => {
@@ -90,25 +91,37 @@ export default function DashboardLayout({
     <div className="flex h-screen bg-surface-base overflow-hidden">
       {/* ── Sidebar ─────────────────────────────────────────────────────────── */}
       <aside
-        className="w-64 flex-shrink-0 bg-surface-raised border-r border-surface-border flex flex-col"
+        className={`flex-shrink-0 bg-surface-raised border-r border-surface-border flex flex-col transition-all duration-300 ease-in-out ${sidebarOpen ? 'w-64' : 'w-16'}`}
         aria-label="Main navigation"
       >
-        {/* Logo */}
-        <div className="flex items-center gap-3 px-5 py-5 border-b border-surface-border">
+        {/* Logo + Collapse Toggle */}
+        <div className="flex items-center gap-3 px-4 py-5 border-b border-surface-border">
           <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-brand-500/10 border border-brand-500/20 flex items-center justify-center">
             <svg className="w-4 h-4 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
                 d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
             </svg>
           </div>
-          <div>
-            <p className="text-sm font-semibold text-slate-100 leading-tight">StadiumOps AI</p>
-            <p className="text-xs text-slate-500">APL Grand Final</p>
-          </div>
+          {sidebarOpen && (
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-slate-100 leading-tight">StadiumOps AI</p>
+              <p className="text-xs text-slate-500">Stadium Ops Platform</p>
+            </div>
+          )}
+          <button
+            id="btn-toggle-sidebar"
+            onClick={() => setSidebarOpen(v => !v)}
+            className="flex-shrink-0 w-7 h-7 rounded-md flex items-center justify-center text-slate-400 hover:text-slate-100 hover:bg-surface-overlay transition-colors"
+            aria-label={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
+          >
+            <svg className={`w-4 h-4 transition-transform duration-300 ${sidebarOpen ? '' : 'rotate-180'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+            </svg>
+          </button>
         </div>
 
         {/* Nav items */}
-        <nav className="flex-1 px-3 py-4 space-y-1" aria-label="Dashboard navigation">
+        <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto" aria-label="Dashboard navigation">
           {NAV_ITEMS.map((item) => {
             const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname?.startsWith(item.href));
             return (
@@ -123,6 +136,7 @@ export default function DashboardLayout({
                 }`}
                 aria-label={item.label}
                 aria-current={isActive ? 'page' : undefined}
+                title={!sidebarOpen ? item.label : undefined}
               >
                 <svg
                   className={`w-5 h-5 flex-shrink-0 transition-colors ${isActive ? 'text-brand-400' : 'group-hover:text-brand-400'}`}
@@ -130,8 +144,10 @@ export default function DashboardLayout({
                 >
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={item.icon} />
                 </svg>
-                <span className="text-sm font-medium">{item.label}</span>
-                {isActive && (
+                {sidebarOpen && (
+                  <span className="text-sm font-medium truncate">{item.label}</span>
+                )}
+                {sidebarOpen && isActive && (
                   <div className="ml-auto w-1 h-4 rounded-full bg-brand-500" />
                 )}
               </a>
@@ -140,8 +156,8 @@ export default function DashboardLayout({
         </nav>
 
         {/* User + Footer */}
-        <div className="px-5 py-4 border-t border-surface-border space-y-2">
-          {user && typeof user !== 'string' && (
+        <div className={`px-4 py-4 border-t border-surface-border space-y-2 ${sidebarOpen ? '' : 'px-2'}`}>
+          {sidebarOpen && user && typeof user !== 'string' && (
             <div className="flex items-center gap-2 mb-2">
               {user.photoURL ? (
                 <img src={user.photoURL} alt="" className="w-6 h-6 rounded-full" />
@@ -153,8 +169,12 @@ export default function DashboardLayout({
               <p className="text-xs text-slate-400 truncate">{user.displayName || user.email}</p>
             </div>
           )}
-          <p className="text-xs text-slate-600">© 2026 StadiumOps AI</p>
-          <p className="text-xs text-slate-600">v0.1.0 — APL Grand Final MVP</p>
+          {sidebarOpen && (
+            <>
+              <p className="text-xs text-slate-600">© 2026 StadiumOps AI</p>
+              <p className="text-xs text-slate-600">v1.0 — Enterprise Edition</p>
+            </>
+          )}
         </div>
       </aside>
 
@@ -163,12 +183,22 @@ export default function DashboardLayout({
         {/* Top Bar */}
         <header className="flex-shrink-0 h-14 bg-surface-raised border-b border-surface-border flex items-center justify-between px-6">
           <div className="flex items-center gap-2">
+            <button
+              id="btn-toggle-sidebar-topbar"
+              onClick={() => setSidebarOpen(v => !v)}
+              className="p-1.5 rounded-md text-slate-400 hover:text-slate-100 hover:bg-surface-overlay transition-colors md:hidden"
+              aria-label="Toggle sidebar"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
             <div className="w-2 h-2 rounded-full bg-brand-400 animate-pulse" aria-label="System online" />
             <span className="text-xs text-slate-400">Live Operations</span>
           </div>
           <div className="flex items-center gap-4">
             <span className="text-xs text-slate-500" id="current-time">
-              APL Grand Final 2026
+              Live Operations Center
             </span>
             <button
               id="btn-sign-out"

@@ -32,7 +32,7 @@ export default function LoginPage() {
             </svg>
           </div>
           <h1 className="text-2xl font-bold text-slate-100">StadiumOps AI</h1>
-          <p className="text-slate-400 text-sm mt-1">APL Grand Final Operations Platform</p>
+          <p className="text-slate-400 text-sm mt-1">Enterprise Stadium Operations Platform</p>
         </div>
 
         {/* Sign-in button */}

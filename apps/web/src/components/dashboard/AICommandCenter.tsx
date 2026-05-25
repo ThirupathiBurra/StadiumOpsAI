@@ -90,8 +90,8 @@ export function AICommandCenter() {
             <Sparkles size={16} />
           </div>
           <div>
-            <h2 className="text-sm font-semibold text-slate-100">Antigravity AI Commander</h2>
-            <p className="text-[10px] text-slate-400">Agentic Operations Orchestrator</p>
+            <h2 className="text-sm font-semibold text-slate-100">StadiumOps AI Assistant</h2>
+            <p className="text-[10px] text-slate-400">Real-Time Operations Intelligence</p>
           </div>
         </div>
         <div className="flex items-center gap-2 px-2 py-1 rounded bg-surface-raised border border-surface-border">

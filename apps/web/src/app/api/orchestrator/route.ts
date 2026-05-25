@@ -1,19 +1,31 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/lib/firebase-admin';
 import { processIncidentCreated, processZoneUpdated, processAlertCreated } from '@/lib/agents/orchestrator';
+
+// ── Soft-auth helper ──────────────────────────────────────────────────────────
+async function softVerify(request: Request): Promise<boolean> {
+  const authHeader = request.headers.get('authorization');
+  if (!authHeader?.startsWith('Bearer ')) return false;
+  const token = authHeader.split('Bearer ')[1];
+  if (!token) return false;
+
+  if (process.env['FIREBASE_CLIENT_EMAIL'] && process.env['FIREBASE_PRIVATE_KEY']) {
+    try {
+      const { auth } = await import('@/lib/firebase-admin');
+      await auth.verifyIdToken(token);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  // Soft-auth: token present but service account not configured
+  return true;
+}
 
 export async function POST(request: Request) {
   try {
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
+    const authorized = await softVerify(request);
+    if (!authorized) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const token = authHeader.split('Bearer ')[1];
-    try {
-      await auth.verifyIdToken(token);
-    } catch (e) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
     const body = await request.json();

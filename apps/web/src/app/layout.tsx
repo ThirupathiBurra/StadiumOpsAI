@@ -3,12 +3,12 @@ import '../styles/globals.css';
 
 export const metadata: Metadata = {
   title: {
-    default:  'StadiumOps AI — APL Grand Final Operations',
+    default:  'StadiumOps AI — Enterprise Operations Platform',
     template: '%s | StadiumOps AI',
   },
   description:
     'Enterprise-grade real-time stadium operations and crowd management platform. Powered by Google AI and Firebase.',
-  keywords: ['stadium operations', 'crowd management', 'AI', 'real-time', 'APL Grand Final'],
+  keywords: ['stadium operations', 'crowd management', 'AI', 'real-time', 'venue intelligence'],
   robots: 'noindex, nofollow', // Internal ops tool — do not index
 };
 

@@ -65,8 +65,8 @@ export default function SimulationPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Simulation failed');
 
-      addLog(`✓ Scenario "${scenarioName}" completed successfully (run: ${data.runId?.slice(0, 8)}...)`, 'success');
-      addLog('→ Check the Live Dashboard and Incident Command for real-time updates.');
+      addLog(`✓ Scenario "${scenarioName}" started (run: ${data.runId?.slice(0, 8)}...)`, 'success');
+      addLog('→ Watch the Live Dashboard & Incident Command — events are streaming live to Firestore.');
     } catch (err: any) {
       addLog(`✗ Error: ${err.message}`, 'error');
     } finally {
@@ -121,7 +121,7 @@ export default function SimulationPage() {
           <div>
             <p className="text-sm font-medium text-slate-200">Demo Mode</p>
             <p className="text-xs text-slate-500 mt-0.5">
-              {demoMode ? 'Accelerated timings (0.5× speed) — faster results' : 'Real-time speed — full duration'}
+              {demoMode ? 'Accelerated timings — fast zone updates in the Live Dashboard' : 'Real-time speed — full scenario duration'}
             </p>
           </div>
           <button
